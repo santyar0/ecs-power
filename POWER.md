@@ -1,30 +1,16 @@
----
-name: ecs-infrastructure-power
----
-
-# Power: ECS Infrastructure Deployment
-
+# Power: My First Power
 ## Purpose
-
-Deploy ECS infrastructure using Terraform and AWS.
-
+What this power helps with.
 ## Activation signals
-
-- Keywords: `ecs`, `terraform`, `aws`
-- Typical prompts: "Deploy ECS infrastructure"
-
+- Keywords:
+- Typical prompts:
 ## Agent behavior
-
-- Do: Use established patterns
-- Don't: Generate new code
-
+- Do:
+- Don’t:
 ## Golden path
-
-1. Clone repository
-2. Configure templates
-3. Deploy infrastructure
-
+1.
+2.
+3.
 ## Examples
-
-**Prompt:** "Deploy ECS infrastructure"
-**Expected outcome:** Guides through deployment process.
+Prompt:
+Expected outcome:
