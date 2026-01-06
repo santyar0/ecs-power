@@ -1,3 +1,11 @@
+---
+name: ecs-infrastructure-power
+displayName: ECS Infrastructure Deployment
+description: Deploy and manage ECS infrastructure using poc-idp repository patterns with AI-DLC methodology and MCP automation
+version: 1.0.0
+keywords: [ecs, terraform, aws, infrastructure, deployment, poc-idp, ai-dlc]
+---
+
 # Power: ECS Infrastructure Deployment
 
 ## Purpose
