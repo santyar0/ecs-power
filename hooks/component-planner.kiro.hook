@@ -1,0 +1,14 @@
+{
+  "name": "component-planner",
+  "displayName": "Component Addition Planner",
+  "description": "Plans the addition of new AWS components to existing infrastructure",
+  "enabled": true,
+  "trigger": {
+    "type": "manual",
+    "buttonText": "Plan New Component"
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "I'll help you plan the addition of a new AWS component to your existing poc-idp infrastructure. Please provide:\n\n1. **Component Type**: What AWS service do you want to add? (e.g., Lambda, API Gateway, SQS, SNS, ElastiSearch, etc.)\n\n2. **Use Case**: What will this component be used for?\n\n3. **Integration Points**: How will it integrate with existing services?\n\nOnce you provide this information, I'll analyze:\n\n## Architecture Planning\n- Integration patterns with existing ECS, RDS, ALB setup\n- Network connectivity requirements\n- Security group modifications needed\n- IAM role and policy requirements\n\n## Implementation Planning\n- Variable structure following poc-idp patterns\n- Resource naming conventions\n- File organization (new .tf files needed)\n- Configuration differences across setup sizes\n\n## Security Considerations\n- Encryption requirements\n- Access control patterns\n- Network isolation needs\n- Audit and logging requirements\n\n## Operational Planning\n- Monitoring and alerting setup\n- Backup and recovery procedures\n- Scaling considerations\n- Maintenance requirements\n\n## Cost Impact\n- Estimated monthly costs\n- Cost optimization opportunities\n- Resource sizing recommendations\n- Billing and tagging strategy\n\n## Implementation Roadmap\n- Step-by-step implementation plan\n- Testing and validation approach\n- Rollback procedures\n- Documentation requirements\n\nWhat component would you like to add to your infrastructure?"
+  }
+}

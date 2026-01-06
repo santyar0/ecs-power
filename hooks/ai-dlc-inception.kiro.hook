@@ -1,0 +1,14 @@
+{
+  "name": "ai-dlc-inception",
+  "displayName": "AI-DLC Inception Phase",
+  "description": "Initiates AI-DLC Inception phase for infrastructure planning and architecture",
+  "enabled": true,
+  "trigger": {
+    "type": "manual",
+    "buttonText": "Start AI-DLC Inception"
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "🚀 **AI-DLC Inception Phase Initiated**\n\nI'll guide you through the AI-DLC Inception phase for infrastructure development. This phase focuses on planning and architecture to ensure we build the right solution.\n\n## Phase Overview\nThe Inception phase includes:\n- **Requirements Analysis** (conditional)\n- **Architecture Design** (mandatory)\n- **Planning and Estimation** (conditional)\n\n## Let's Begin\n\nTo start, please describe your infrastructure intent using this format:\n**\"Using AI-DLC, I want to [your specific infrastructure goal]\"**\n\nExamples:\n- \"Using AI-DLC, I want to deploy a production ECS infrastructure for my e-commerce application\"\n- \"Using AI-DLC, I want to add Lambda functions for order processing to my existing ECS setup\"\n- \"Using AI-DLC, I want to optimize my current infrastructure to reduce costs by 30%\"\n\n## What I'll Do Next\n\n1. **Analyze Your Intent**: Understand the complexity and scope\n2. **Determine Required Stages**: Decide which Inception stages are needed\n3. **Ask Structured Questions**: Gather requirements systematically\n4. **Create Architecture Plan**: Design the target state architecture\n5. **Generate Planning Artifacts**: Create timeline and resource estimates\n\n## Quality Gates\nBefore proceeding to Construction phase, we'll ensure:\n- [ ] Requirements are clear and complete\n- [ ] Architecture is feasible and aligned with poc-idp patterns\n- [ ] Risks are identified and mitigation plans exist\n- [ ] You approve the overall approach\n\n**What is your infrastructure intent?**"
+  }
+}

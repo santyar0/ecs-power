@@ -1,0 +1,14 @@
+{
+  "name": "security-audit",
+  "displayName": "Security Audit",
+  "description": "Performs comprehensive security audit of infrastructure configuration",
+  "enabled": true,
+  "trigger": {
+    "type": "manual",
+    "buttonText": "Security Audit"
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "Please perform a comprehensive security audit of the infrastructure:\n\n## IAM Security Review\n1. **Policy Analysis**: Review all IAM policies for overprivileged access\n2. **Role Assumptions**: Validate assume role policies and trust relationships\n3. **Service Roles**: Ensure service roles follow least privilege\n4. **Cross-Account Access**: Review any cross-account permissions\n5. **Unused Permissions**: Identify and recommend removal of unused permissions\n\n## Network Security\n1. **Security Groups**: Review all ingress/egress rules for necessity\n2. **NACLs**: Validate network ACL configurations\n3. **VPC Configuration**: Check for proper network isolation\n4. **Public Access**: Identify any unintended public exposure\n5. **VPN/Private Connectivity**: Review secure access methods\n\n## Data Protection\n1. **Encryption at Rest**: Verify all data stores use encryption\n2. **Encryption in Transit**: Validate TLS/SSL configurations\n3. **Key Management**: Review KMS key policies and rotation\n4. **Backup Encryption**: Ensure backups are encrypted\n5. **Data Classification**: Review data handling practices\n\n## Application Security\n1. **Container Security**: Review ECS task definitions and images\n2. **Secrets Management**: Validate secrets handling (no hardcoded secrets)\n3. **Environment Variables**: Check for sensitive data exposure\n4. **Image Scanning**: Recommend container vulnerability scanning\n5. **Runtime Security**: Review runtime protection measures\n\n## Compliance and Monitoring\n1. **Audit Logging**: Verify CloudTrail and service logging\n2. **Monitoring Coverage**: Check security monitoring and alerting\n3. **Compliance Standards**: Review against relevant frameworks (SOC2, PCI, etc.)\n4. **Incident Response**: Evaluate incident response capabilities\n5. **Access Logging**: Verify comprehensive access logging\n\n## Vulnerability Assessment\n1. **Known Vulnerabilities**: Check for known security issues\n2. **Configuration Drift**: Identify security configuration drift\n3. **Patch Management**: Review update and patching procedures\n4. **Dependency Security**: Check for vulnerable dependencies\n5. **Security Baselines**: Compare against security baselines\n\nProvide specific remediation steps for each finding, prioritized by risk level."
+  }
+}

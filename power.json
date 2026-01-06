@@ -1,0 +1,86 @@
+{
+  "name": "ecs-infrastructure-power",
+  "displayName": "ECS Infrastructure Deployment",
+  "version": "1.0.0",
+  "description": "Comprehensive ECS infrastructure deployment using AI-DLC methodology, poc-idp repository patterns, and intelligent MCP automation with guided setup sizes (small, medium, large)",
+  "keywords": ["ecs", "terraform", "aws", "infrastructure", "deployment", "poc-idp", "ai-dlc", "automation"],
+  "author": "ECS Infrastructure Team",
+  "type": "hybrid",
+  "mcpServers": {
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-git"],
+      "description": "Git operations for cloning poc-idp repository and version control"
+    },
+    "aws": {
+      "command": "uvx", 
+      "args": ["mcp-aws"],
+      "description": "AWS operations for S3, IAM, and resource validation"
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-filesystem"],
+      "description": "File operations for template customization and configuration management"
+    },
+    "aws-docs": {
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "description": "AWS documentation and best practices lookup"
+    },
+    "github": {
+      "command": "uvx",
+      "args": ["mcp-github"],
+      "description": "GitHub operations for repository analysis and best practices"
+    },
+    "terraform": {
+      "command": "uvx",
+      "args": ["mcp-terraform"],
+      "description": "Terraform validation, planning, and state management"
+    }
+  },
+  "steeringFiles": [
+    "ecs-deployment-workflow.md",
+    "template-selection-guide.md", 
+    "s3-backend-setup.md",
+    "terraform-execution-steps.md",
+    "troubleshooting-guide.md",
+    "component-extension-guide.md",
+    "aws-terraform-best-practices.md",
+    "infrastructure-customization-workflow.md",
+    "ai-dlc-infrastructure-workflow.md"
+  ],
+  "entryPoints": {
+    "deploy": {
+      "description": "Start ECS infrastructure deployment",
+      "steeringFile": "ecs-deployment-workflow.md"
+    },
+    "ai-dlc": {
+      "description": "Use AI-DLC methodology for structured infrastructure development",
+      "steeringFile": "ai-dlc-infrastructure-workflow.md"
+    },
+    "templates": {
+      "description": "Learn about setup size templates", 
+      "steeringFile": "template-selection-guide.md"
+    },
+    "backend": {
+      "description": "Setup S3 backend for Terraform state",
+      "steeringFile": "s3-backend-setup.md"
+    },
+    "customize": {
+      "description": "Customize infrastructure with new components",
+      "steeringFile": "infrastructure-customization-workflow.md"
+    },
+    "extend": {
+      "description": "Learn how to extend infrastructure with new components",
+      "steeringFile": "component-extension-guide.md"
+    },
+    "best-practices": {
+      "description": "AWS and Terraform best practices guide",
+      "steeringFile": "aws-terraform-best-practices.md"
+    },
+    "troubleshoot": {
+      "description": "Troubleshoot deployment issues",
+      "steeringFile": "troubleshooting-guide.md"
+    }
+  }
+}

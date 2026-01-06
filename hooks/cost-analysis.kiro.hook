@@ -1,0 +1,14 @@
+{
+  "name": "cost-analysis",
+  "displayName": "Cost Analysis",
+  "description": "Analyzes infrastructure costs and provides optimization recommendations",
+  "enabled": true,
+  "trigger": {
+    "type": "manual",
+    "buttonText": "Analyze Costs"
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "Please perform a comprehensive cost analysis of the current infrastructure:\n\n## Current Cost Analysis\n1. Estimate monthly costs for each major service (ECS, RDS, ALB, etc.)\n2. Identify the most expensive components\n3. Compare costs across different setup sizes (small/medium/large)\n4. Analyze cost trends and patterns\n\n## Cost Optimization Opportunities\n1. **Right-sizing**: Review instance types and sizes\n2. **Reserved Capacity**: Identify candidates for Reserved Instances/Savings Plans\n3. **Lifecycle Policies**: S3 storage class transitions, EBS snapshot cleanup\n4. **Auto Scaling**: Opportunities for dynamic scaling\n5. **Unused Resources**: Identify and recommend cleanup\n\n## Cost Monitoring\n1. Review current tagging strategy for cost allocation\n2. Recommend cost monitoring and alerting setup\n3. Suggest budget controls and spending limits\n4. Identify cost anomaly detection opportunities\n\n## Recommendations\n1. Prioritize optimization opportunities by potential savings\n2. Provide implementation steps for each recommendation\n3. Estimate potential monthly savings\n4. Consider impact on performance and availability\n\nUse AWS pricing data and best practices to provide accurate estimates and actionable recommendations."
+  }
+}

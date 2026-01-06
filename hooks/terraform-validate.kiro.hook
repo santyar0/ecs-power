@@ -1,0 +1,18 @@
+{
+  "name": "terraform-validate",
+  "displayName": "Terraform Validate",
+  "description": "Validates Terraform configuration files for syntax and consistency",
+  "enabled": true,
+  "trigger": {
+    "type": "file_save",
+    "patterns": ["**/*.tf", "**/*.tfvars", "**/*.tfbackend"]
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "A Terraform file was modified. Please validate the Terraform configuration for syntax errors, check for best practices compliance, and ensure all variables are properly defined. Focus on:\n\n1. Syntax validation with `terraform fmt` and `terraform validate`\n2. Variable validation and type checking\n3. Resource naming consistency with poc-idp patterns\n4. Security best practices (encryption, IAM least privilege)\n5. Cost optimization opportunities\n\nIf any issues are found, provide specific recommendations for fixes."
+  },
+  "settings": {
+    "debounceMs": 2000,
+    "maxExecutionsPerMinute": 3
+  }
+}

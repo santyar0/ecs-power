@@ -1,0 +1,14 @@
+{
+  "name": "ai-dlc-construction",
+  "displayName": "AI-DLC Construction Phase",
+  "description": "Initiates AI-DLC Construction phase for infrastructure design and implementation",
+  "enabled": true,
+  "trigger": {
+    "type": "manual",
+    "buttonText": "Start AI-DLC Construction"
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "🔨 **AI-DLC Construction Phase Initiated**\n\nWelcome to the Construction phase! This phase focuses on detailed design and implementation of your infrastructure solution.\n\n## Phase Overview\nThe Construction phase includes:\n- **Detailed Design** (conditional - for complex integrations)\n- **Implementation** (mandatory - core infrastructure development)\n- **Testing and Validation** (conditional - for critical infrastructure)\n\n## Prerequisites Check\nBefore starting Construction, I need to verify:\n- [ ] Inception phase completed with approved architecture\n- [ ] Requirements are clearly defined\n- [ ] Architecture design is validated\n- [ ] Planning artifacts are available\n\n## Construction Process\n\n### Stage 2.1: Detailed Design (if needed)\n- Component specifications\n- Interface definitions\n- Security design\n- Monitoring strategy\n\n### Stage 2.2: Implementation (mandatory)\n- Terraform code generation following poc-idp patterns\n- Configuration management (tfvars, tfbackend)\n- Security implementation (IAM, encryption, networking)\n- Integration development\n- Documentation creation\n\n### Stage 2.3: Testing and Validation (if needed)\n- Validation planning\n- Syntax and security testing\n- Integration testing\n- Performance validation\n\n## MCP Integration\nDuring Construction, I'll use:\n- **Filesystem MCP**: File creation and organization\n- **Terraform MCP**: Code validation and best practices\n- **AWS MCP**: Resource configuration verification\n- **Git MCP**: Version control and change tracking\n- **AWS Docs MCP**: Implementation best practices\n\n## Quality Gates\nBefore proceeding to Operations phase:\n- [ ] Design completeness and consistency\n- [ ] Implementation follows poc-idp patterns\n- [ ] Security compliance validated\n- [ ] Testing coverage adequate\n- [ ] Code review completed\n\n## Deliverables\n- Terraform infrastructure code\n- Configuration files\n- Security policies and roles\n- Implementation documentation\n- Test results (if applicable)\n\n**Are you ready to proceed with Construction? Please confirm that Inception phase is complete and provide any specific implementation requirements.**"
+  }
+}

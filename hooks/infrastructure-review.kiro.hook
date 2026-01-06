@@ -1,0 +1,14 @@
+{
+  "name": "infrastructure-review",
+  "displayName": "Infrastructure Review",
+  "description": "Reviews infrastructure changes for compliance with poc-idp patterns and AWS best practices",
+  "enabled": true,
+  "trigger": {
+    "type": "manual",
+    "buttonText": "Review Infrastructure"
+  },
+  "action": {
+    "type": "agent_message",
+    "message": "Please perform a comprehensive infrastructure review focusing on:\n\n## Architecture Review\n1. Analyze current infrastructure against poc-idp patterns\n2. Check for consistency in naming conventions\n3. Validate resource organization and file structure\n4. Review integration points between services\n\n## Security Review\n1. IAM policies and roles (least privilege principle)\n2. Security group configurations\n3. Encryption settings (at rest and in transit)\n4. Network security and isolation\n5. Secrets management practices\n\n## Cost Optimization\n1. Resource sizing appropriateness\n2. Unused or underutilized resources\n3. Lifecycle policies and cleanup\n4. Reserved capacity opportunities\n\n## Operational Excellence\n1. Monitoring and alerting coverage\n2. Backup and disaster recovery\n3. Logging and observability\n4. Maintenance and update procedures\n\n## Compliance\n1. Tagging consistency and completeness\n2. Documentation completeness\n3. Best practices adherence\n4. Regulatory compliance (if applicable)\n\nProvide specific recommendations for improvements with priority levels."
+  }
+}
