@@ -1,0 +1,34 @@
+{
+  "mcpServers": {
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-git"],
+      "description": "Git operations for repository management"
+    },
+    "aws": {
+      "command": "uvx",
+      "args": ["mcp-aws"],
+      "description": "AWS operations for resource management"
+    },
+    "filesystem": {
+      "command": "uvx",
+      "args": ["mcp-filesystem"],
+      "description": "File operations for template management"
+    },
+    "aws-docs": {
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "description": "AWS documentation lookup"
+    },
+    "github": {
+      "command": "uvx",
+      "args": ["mcp-github"],
+      "description": "GitHub operations for repository analysis"
+    },
+    "terraform": {
+      "command": "uvx",
+      "args": ["mcp-terraform"],
+      "description": "Terraform validation and planning"
+    }
+  }
+}
