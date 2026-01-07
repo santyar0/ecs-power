@@ -1,103 +1,115 @@
 # Component Extension Guide
 
-This guide provides comprehensive rules and patterns for extending the poc-idp infrastructure with new AWS components while maintaining consistency, security, and best practices.
+Extend poc-idp infrastructure with new AWS components while maintaining consistency, security, and best practices.
 
-## Repository Architecture Analysis
+> **For exact coding patterns and style rules**, see `#poc-idp-style-guide`  
+> **For complex customizations**, see `#ai-dlc-infrastructure-workflow`
 
-The poc-idp repository follows a well-structured pattern that must be maintained when adding new components:
+## When to Extend
 
-### File Organization Pattern
+**Good Candidates:**
+- Adding Lambda, API Gateway, SQS, SNS
+- Adding ElastiSearch, Redis clusters
+- Adding EFS, FSx storage
+- Adding monitoring tools
+- Adding CI/CD components
+
+**Consider Alternatives:**
+- Core networking changes → Use existing VPC patterns
+- Security model changes → Extend existing IAM patterns
+- Fundamental architecture changes → Separate deployment
+
+---
+
+## Extension Philosophy
+
+1. **Extend, Don't Replace** - Build upon existing patterns
+2. **Consistency First** - Follow established conventions
+3. **Security by Design** - Implement controls from the start
+4. **Operational Excellence** - Include monitoring from day one
+
+---
+
+## Repository Architecture
+
 ```
-├── main.tf                    # Provider configuration and main resources
-├── variables.tf               # All input variables with validation
-├── locals.tf                  # Computed values and resource naming
-├── outputs.tf                 # Output values for other modules
-├── data.tf                    # Data source definitions
-├── backend.tf                 # Terraform backend configuration
-├── providers.tf               # Provider requirements
-├── {service}.tf               # Service-specific resources (ecs.tf, rds.tf, etc.)
-├── alarms.tf                  # CloudWatch alarms for all services
-└── modules/                   # Reusable modules
+├── main.tf           # Provider configuration
+├── variables.tf      # Input variables with validation
+├── locals.tf         # Computed values and naming
+├── outputs.tf        # Output values
+├── data.tf           # Data sources
+├── backend.tf        # Backend configuration
+├── providers.tf      # Provider requirements
+├── {service}.tf      # Service-specific resources
+├── alarms.tf         # CloudWatch alarms
+└── modules/          # Reusable modules
     └── {service}/
-        ├── main.tf
-        ├── variables.tf
-        ├── outputs.tf
-        └── versions.tf
 ```
 
-### Naming Convention Analysis
-The repository uses consistent naming patterns that MUST be followed:
+---
 
-**Resource Names (in locals.tf):**
+## Naming Conventions
+
+**Character Limits:**
+| Type | Limit | Examples |
+|------|-------|----------|
+| Short | 21 chars | VPC, ALB, ECS cluster |
+| Medium | 38 chars | S3, RDS, ElastiCache, EFS |
+| Policy | 72 chars | IAM policies |
+
+**Pattern:**
 ```hcl
-# Pattern: {service}_{descriptor}_{suffix}
-vpc_name = "${substr(var.application, 0, 21)}-${substr(var.environment, 0, 4)}-${random_string.setup.id}"
-alb_name = "${substr(var.application, 0, 21)}-${substr(var.environment, 0, 4)}-ecsalb-${random_string.setup.id}"
+# locals.tf
+resource_name = "${substr(var.application, 0, 21)}-${substr(var.environment, 0, 4)}-{service}-${random_string.setup.id}"
 ```
 
-**Character Limits by Service:**
-- Short names (21 chars): VPC, ALB, ECS cluster names
-- Medium names (38 chars): S3 buckets, RDS, ElastiCache, EFS
-- Policy names (72 chars): IAM policies with descriptive names
+---
 
-## Rules for Adding New Components
+## 8 Rules for Adding Components
 
-### Rule 1: File Placement and Naming
+### Rule 1: File Placement
 
-**MUST:**
-- Create a dedicated `{service}.tf` file for each new AWS service
-- Follow the established file naming pattern
-- Place service-specific resources in their dedicated file
-- Add variables to `variables.tf` with proper validation
-- Add computed names to `locals.tf` following naming patterns
-- Add outputs to `outputs.tf` for important resource attributes
-
-**Example: Adding AWS Lambda**
-```hcl
-# Create: lambda.tf
-# Add to: variables.tf, locals.tf, outputs.tf
-# Update: alarms.tf (if monitoring needed)
+Create dedicated `{service}.tf` file for each AWS service:
+```
+# Adding Lambda
+Create: lambda.tf
+Update: variables.tf, locals.tf, outputs.tf, alarms.tf
 ```
 
-### Rule 2: Variable Structure Compliance
+### Rule 2: Variable Structure
 
-**MUST follow the established variable pattern:**
 ```hcl
 variable "service_property_name" {
-  description = "Clear, concise description of what this variable controls"
-  type        = string|number|bool|list(type)|map(type)|object({...})
-  default     = appropriate_default_value
+  description = "Clear description"
+  type        = string
+  default     = "default_value"
   
   validation {
     condition     = validation_logic
-    error_message = "Clear error message explaining the validation requirement"
+    error_message = "Clear error message"
   }
 }
 ```
 
-**Variable Naming Convention:**
-- Pattern: `{service}_{property}_{descriptor}`
-- Examples: `lambda_runtime`, `lambda_memory_size`, `lambda_timeout`
+**Naming:** `{service}_{property}_{descriptor}`
 
 ### Rule 3: Resource Naming in Locals
 
-**MUST add resource names to locals.tf:**
 ```hcl
-# Lambda example
+# locals.tf
 lambda_function_name = "${substr(var.application, 0, 38)}-${substr(var.environment, 0, 5)}-lambda-${random_string.setup.id}"
-lambda_role_name = "${substr(var.application, 0, 21)}-${substr(var.environment, 0, 4)}-lambda-role-${random_string.setup.id}"
+lambda_role_name     = "${substr(var.application, 0, 21)}-${substr(var.environment, 0, 4)}-lambda-role-${random_string.setup.id}"
 ```
 
-### Rule 4: Security Group Integration
+### Rule 4: Security Group Pattern
 
-**MUST follow the security group pattern:**
 ```hcl
 module "service_sg" {
-  source = "./modules/vpn_sg" // v5.3.0
+  source = "./modules/vpn_sg"
 
   name        = local.service_sg_name
   vpc_id      = module.vpc.vpc_id
-  description = "Security Group for [service description]"
+  description = "Security Group for [service]"
 
   ingress_with_source_security_group_id = [
     {
@@ -108,15 +120,12 @@ module "service_sg" {
 
   egress_rules = ["all-all"]
 
-  tags = {
-    Name = local.service_sg_name
-  }
+  tags = { Name = local.service_sg_name }
 }
 ```
 
 ### Rule 5: IAM Policy Pattern
 
-**MUST follow the IAM structure:**
 ```hcl
 resource "aws_iam_role" "service_role" {
   name = local.service_role_name
@@ -124,48 +133,36 @@ resource "aws_iam_role" "service_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "service.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "service.amazonaws.com" }
+      Action    = "sts:AssumeRole"
     }]
   })
 
-  tags = {
-    Name = local.service_role_name
-  }
+  tags = { Name = local.service_role_name }
 }
 
 resource "aws_iam_policy" "service_policy" {
   name = local.service_policy_name
 
   policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Sid    = "DescriptiveStatementId"
-        Effect = "Allow"
-        Action = [
-          "service:Action1",
-          "service:Action2"
-        ]
-        Resource = "arn:aws:service:${var.region}:${var.account_id}:resource/*"
-      }
-    ]
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "DescriptiveStatementId"
+      Effect   = "Allow"
+      Action   = ["service:Action1", "service:Action2"]
+      Resource = "arn:aws:service:${var.region}:${var.account_id}:resource/*"
+    }]
   })
 }
 ```
 
-### Rule 6: Tagging Compliance
+### Rule 6: Tagging
 
-**MUST apply standard tags:**
 ```hcl
-tags = {
-  Name = local.resource_name
-}
+tags = { Name = local.resource_name }
 
-# For resources needing additional tags:
+# Extended tags
 tags = merge(local.tags, {
   Service     = "service-name"
   Environment = var.environment
@@ -173,207 +170,78 @@ tags = merge(local.tags, {
 })
 ```
 
-### Rule 7: Conditional Resource Creation
+### Rule 7: Conditional Creation
 
-**MUST use consistent conditional patterns:**
 ```hcl
-# Using count for simple conditional creation
+# Using count
 resource "aws_service_resource" "main" {
   count = var.service_create ? 1 : 0
-  
-  name = local.service_name
-  # ... configuration
+  name  = local.service_name
 }
 
-# Using for_each for multiple similar resources
+# Using for_each
 resource "aws_service_resource" "multiple" {
   for_each = local.service_configs
-
-  name = local.service_names[each.key]
-  # ... configuration
+  name     = local.service_names[each.key]
 }
 ```
 
 ### Rule 8: Module Integration
 
-**MUST use modules when available:**
 ```hcl
 module "service_name" {
-  source = "./modules/service_name" // v{version}
+  source = "./modules/service_name"
 
   # Required parameters first
   name   = local.service_name
   vpc_id = module.vpc.vpc_id
 
-  # Optional parameters grouped logically
+  # Optional parameters
   instance_class = var.service_instance_class
   
   # Tags last
-  tags = {
-    Name = local.service_name
-  }
+  tags = { Name = local.service_name }
 }
 ```
 
-## AWS Best Practices Integration
+---
 
-Based on AWS prescriptive guidance and industry best practices:
+## Extension Workflow
 
-### Security Best Practices
+### Phase 1: Planning
 
-**MUST implement:**
-1. **Least Privilege IAM**: Only grant necessary permissions
-2. **Encryption**: Enable encryption at rest and in transit
-3. **Network Security**: Use security groups and NACLs appropriately
-4. **Secrets Management**: Use AWS Secrets Manager or Parameter Store
-5. **Logging**: Enable CloudTrail and service-specific logging
+1. **Component Analysis** - Research AWS service best practices
+2. **Architecture Design** - Design integration with existing infrastructure
+3. **Variable Planning** - Plan variable structure following poc-idp patterns
 
-### Reliability Best Practices
+### Phase 2: Implementation
 
-**MUST implement:**
-1. **Multi-AZ Deployment**: For production workloads
-2. **Health Checks**: Implement comprehensive health monitoring
-3. **Backup Strategy**: Automated backups for stateful resources
-4. **Disaster Recovery**: Cross-region replication where appropriate
+1. **Variables** - Add to `variables.tf` with validation
+2. **Locals** - Add computed names to `locals.tf`
+3. **Resources** - Create dedicated `{service}.tf` file
+4. **Security** - Add IAM roles, security groups
+5. **Monitoring** - Add CloudWatch alarms
 
-### Performance Best Practices
+### Phase 3: Integration
 
-**MUST implement:**
-1. **Right-sizing**: Choose appropriate instance types
-2. **Auto Scaling**: Implement where applicable
-3. **Caching**: Use ElastiCache for performance optimization
-4. **CDN**: CloudFront for content delivery
+1. **Configuration** - Update tfvars templates
+2. **Validation** - Run `terraform fmt`, `validate`, `plan`
+3. **Security Check** - Review IAM policies, security groups
 
-### Cost Optimization
+### Phase 4: Deployment
 
-**MUST implement:**
-1. **Resource Tagging**: Comprehensive cost allocation tags
-2. **Lifecycle Policies**: S3 lifecycle management
-3. **Reserved Instances**: For predictable workloads
-4. **Monitoring**: Cost and usage monitoring
+1. **Staged Deploy** - Dev → Staging → Production
+2. **Integration Test** - Verify service communication
+3. **Operational Validation** - Confirm monitoring works
 
-## Component Addition Workflow
+---
 
-### Step 1: Planning Phase
+## Common Patterns
 
-**Ask Kiro to:**
-> "Analyze the poc-idp repository structure and help me plan adding [new-component]"
+### Adding Lambda
 
-This will:
-- Review existing patterns
-- Identify integration points
-- Suggest variable structure
-- Recommend security considerations
-
-### Step 2: Variable Definition
-
-**Ask Kiro to:**
-> "Create variables for [new-component] following poc-idp patterns"
-
-This will:
-- Generate properly structured variables
-- Add validation rules
-- Follow naming conventions
-- Include default values
-
-### Step 3: Resource Implementation
-
-**Ask Kiro to:**
-> "Implement [new-component] resources following poc-idp architecture"
-
-This will:
-- Create service-specific .tf file
-- Add resource names to locals.tf
-- Implement security groups
-- Add IAM roles and policies
-
-### Step 4: Integration and Testing
-
-**Ask Kiro to:**
-> "Integrate [new-component] with existing infrastructure and validate"
-
-This will:
-- Update tfvars templates
-- Add monitoring and alarms
-- Test with terraform plan
-- Validate security compliance
-
-## Common Component Patterns
-
-### Adding Database Services (RDS, DynamoDB, DocumentDB)
-
-**Required Elements:**
-- Subnet groups for network isolation
-- Security groups for access control
-- Parameter groups for configuration
-- Backup and maintenance windows
-- Encryption configuration
-- Monitoring and alarms
-
-### Adding Compute Services (Lambda, ECS, EC2)
-
-**Required Elements:**
-- IAM roles and policies
-- Security groups
-- VPC configuration
-- Logging configuration
-- Monitoring and alarms
-- Auto-scaling (where applicable)
-
-### Adding Storage Services (S3, EFS, EBS)
-
-**Required Elements:**
-- Encryption configuration
-- Access policies
-- Lifecycle management
-- Backup strategies
-- Monitoring and alarms
-- Cross-region replication (if needed)
-
-### Adding Networking Services (VPN, NAT, Load Balancers)
-
-**Required Elements:**
-- Route table updates
-- Security group rules
-- Health checks
-- SSL/TLS certificates
-- Monitoring and alarms
-- High availability configuration
-
-## Validation Checklist
-
-Before adding any new component, ensure:
-
-**Architecture Compliance:**
-- [ ] Follows file organization pattern
-- [ ] Uses consistent naming conventions
-- [ ] Implements proper tagging
-- [ ] Includes appropriate outputs
-
-**Security Compliance:**
-- [ ] Implements least privilege IAM
-- [ ] Enables encryption where applicable
-- [ ] Uses security groups appropriately
-- [ ] Follows network security best practices
-
-**Operational Compliance:**
-- [ ] Includes monitoring and alarms
-- [ ] Implements backup strategies
-- [ ] Supports high availability
-- [ ] Includes proper documentation
-
-**Cost Optimization:**
-- [ ] Uses appropriate instance sizes
-- [ ] Implements lifecycle policies
-- [ ] Includes cost allocation tags
-- [ ] Considers reserved capacity
-
-## Example: Adding AWS Lambda
-
-Here's a complete example of adding Lambda following all rules:
-
-### 1. Variables (add to variables.tf)
 ```hcl
+# variables.tf
 variable "lambda_create" {
   description = "Whether to create Lambda functions"
   type        = bool
@@ -387,15 +255,135 @@ variable "lambda_functions" {
     handler     = string
     memory_size = optional(number, 128)
     timeout     = optional(number, 30)
+  }))
+  default = {}
+}
+
+# locals.tf
+lambda_function_name = "${substr(var.application, 0, 38)}-${substr(var.environment, 0, 5)}-lambda-${random_string.setup.id}"
+```
+
+### Adding EFS
+
+```hcl
+# variables.tf
+variable "efs_create" {
+  description = "Whether to create EFS file system"
+  type        = bool
+  default     = false
+}
+
+variable "efs_performance_mode" {
+  description = "EFS performance mode"
+  type        = string
+  default     = "generalPurpose"
+  
+  validation {
+    condition     = contains(["generalPurpose", "maxIO"], var.efs_performance_mode)
+    error_message = "Must be generalPurpose or maxIO."
+  }
+}
+```
+
+### Adding SQS
+
+```hcl
+# variables.tf
+variable "queues" {
+  description = "Map of SQS queues to create"
+  type = map(object({
+    visibility_timeout_seconds = optional(number, 30)
+    message_retention_seconds  = optional(number, 1209600)
+    fifo_queue                = optional(bool, false)
+  }))
+  default = {}
+}
+```
+
+---
+
+## Setup Size Configurations
+
+Components should adapt to setup size:
+
+```hcl
+locals {
+  component_configs = {
+    small = {
+      instance_size = "small"
+      ha_enabled    = false
+      backup        = false
+    }
+    medium = {
+      instance_size = "medium"
+      ha_enabled    = false
+      backup        = true
+    }
+    large = {
+      instance_size = "large"
+      ha_enabled    = true
+      backup        = true
+    }
+  }
+}
+```
+
+---
+
+## AWS Best Practices
+
+### Security
+- Least privilege IAM
+- Encryption at rest and in transit
+- Security groups with minimal access
+- Secrets Manager for sensitive data
+- CloudTrail logging
+
+### Reliability
+- Multi-AZ for production
+- Health checks
+- Automated backups
+- Disaster recovery planning
+
+### Performance
+- Right-sizing instances
+- Auto scaling where applicable
+- Caching with ElastiCache
+- CloudFront for content delivery
+
+### Cost
+- Resource tagging for cost allocation
+- Lifecycle policies
+- Reserved instances for predictable workloads
+- Cost monitoring
+
+---
+
+## Complete Example: Adding Lambda
+
+### 1. Variables (variables.tf)
+```hcl
+variable "lambda_create" {
+  description = "Whether to create Lambda functions"
+  type        = bool
+  default     = false
+}
+
+variable "lambda_functions" {
+  description = "Map of Lambda functions"
+  type = map(object({
+    runtime     = string
+    handler     = string
+    memory_size = optional(number, 128)
+    timeout     = optional(number, 30)
     environment = optional(map(string), {})
   }))
   default = {}
 }
 ```
 
-### 2. Locals (add to locals.tf)
+### 2. Locals (locals.tf)
 ```hcl
-# Lambda naming
 lambda_functions = {
   for name, config in var.lambda_functions : name => merge(config, {
     function_name = "${substr(var.application, 0, 38)}-${substr(var.environment, 0, 5)}-${name}-${random_string.setup.id}"
@@ -404,52 +392,39 @@ lambda_functions = {
 }
 ```
 
-### 3. Resources (create lambda.tf)
+### 3. Resources (lambda.tf)
 ```hcl
-# Lambda execution role
 resource "aws_iam_role" "lambda_execution_role" {
   for_each = var.lambda_create ? local.lambda_functions : {}
-
-  name = each.value.role_name
+  name     = each.value.role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
     }]
   })
 
-  tags = {
-    Name = each.value.role_name
-  }
+  tags = { Name = each.value.role_name }
 }
 
-# Lambda function
 resource "aws_lambda_function" "functions" {
-  for_each = var.lambda_create ? local.lambda_functions : {}
-
+  for_each      = var.lambda_create ? local.lambda_functions : {}
   function_name = each.value.function_name
-  role         = aws_iam_role.lambda_execution_role[each.key].arn
-  handler      = each.value.handler
-  runtime      = each.value.runtime
-  memory_size  = each.value.memory_size
-  timeout      = each.value.timeout
+  role          = aws_iam_role.lambda_execution_role[each.key].arn
+  handler       = each.value.handler
+  runtime       = each.value.runtime
+  memory_size   = each.value.memory_size
+  timeout       = each.value.timeout
 
-  environment {
-    variables = each.value.environment
-  }
-
-  tags = {
-    Name = each.value.function_name
-  }
+  environment { variables = each.value.environment }
+  tags = { Name = each.value.function_name }
 }
 ```
 
-### 4. Outputs (add to outputs.tf)
+### 4. Outputs (outputs.tf)
 ```hcl
 output "lambda_function_arns" {
   description = "ARNs of created Lambda functions"
@@ -459,4 +434,48 @@ output "lambda_function_arns" {
 }
 ```
 
-This example demonstrates complete compliance with all established patterns and best practices.
+---
+
+## Validation Checklist
+
+### Architecture
+- [ ] Follows file organization pattern
+- [ ] Uses consistent naming conventions
+- [ ] Implements proper tagging
+- [ ] Includes appropriate outputs
+
+### Security
+- [ ] Implements least privilege IAM
+- [ ] Enables encryption where applicable
+- [ ] Uses security groups appropriately
+- [ ] Follows network security best practices
+
+### Operations
+- [ ] Includes monitoring and alarms
+- [ ] Implements backup strategies
+- [ ] Supports high availability (if needed)
+- [ ] Includes documentation
+
+### Cost
+- [ ] Uses appropriate instance sizes
+- [ ] Implements lifecycle policies
+- [ ] Includes cost allocation tags
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Resource naming conflicts | Check naming patterns in locals.tf |
+| Circular dependencies | Review security group references |
+| IAM permission errors | Follow least privilege patterns |
+| Network connectivity | Check security groups and routing |
+
+---
+
+## Related Guides
+
+- `#poc-idp-style-guide` - **Exact coding patterns from repository**
+- `#ecs-deployment-workflow` - Deployment steps
+- `#troubleshooting-guide` - Issue resolution

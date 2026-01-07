@@ -1,420 +1,630 @@
 # ECS Infrastructure Deployment Workflow
 
-**CRITICAL: This workflow is for the IMPLEMENTATION PHASE only, after completing the spec workflow**
+This guide walks you through deploying ECS infrastructure using the battle-tested poc-idp repository with Terraform.
 
-**Complete Workflow Order:**
-1. **Requirements Phase** - Gather and document requirements (use this power's questioning logic)
-2. **Design Phase** - Create comprehensive design document with architecture
-3. **Tasks Phase** - Break down implementation into discrete coding tasks  
-4. **Implementation Phase** - Execute tasks using this deployment workflow
+> **For complex deployments or structured planning**, see `#ai-dlc-infrastructure-workflow`
 
-This guide walks you through the implementation phase of deploying ECS infrastructure using the battle-tested poc-idp repository. The approach is:
-1. **Clone the repository** (during task execution only)
-2. **Use existing templates** (small/medium/large)
-3. **Customize templates** with your values
-4. **Deploy using proven patterns**
+## Workflow Overview
 
-## Repository-First Implementation Philosophy
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Requirements   │ → │     Design      │ → │     Tasks       │ → │ Implementation  │
+│     Phase       │    │     Phase       │    │     Phase       │    │     Phase       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-**Why we clone instead of generate (during implementation):**
-- ✅ **Battle-tested**: Templates are production-proven across multiple deployments
-- ✅ **Complete**: All components work together seamlessly
-- ✅ **Maintained**: Regular updates and security patches
-- ✅ **Documented**: Comprehensive README and examples
-- ❌ **Never generate**: Creating new Terraform code introduces untested patterns
+**Repository cloning only happens during Implementation Phase.**
 
-**The Golden Rule: Spec First, Clone Second, Customize Third, Deploy Fourth**
-
-## AI-DLC Integration
-
-For complex deployments or when you need structured planning, consider using the **AI-Driven Development Lifecycle (AI-DLC)** approach:
-
-**Start with AI-DLC:** "Using AI-DLC, I want to deploy ECS infrastructure for [your specific use case]"
-
-This activates the three-phase AI-DLC workflow:
-1. **Inception**: Requirements analysis and architecture design
-2. **Construction**: Detailed design and implementation  
-3. **Operations**: Deployment, monitoring, and documentation
-
-**When to use AI-DLC:**
-- Complex production deployments
-- Multi-service architectures
-- Compliance or security requirements
-- Team collaboration needs
-- Unclear requirements
-
-**For detailed AI-DLC guidance:** See `#ai-dlc-infrastructure-workflow`
-
-## Standard Deployment Overview
-
-The poc-idp repository provides three pre-configured setup sizes:
-- **Small**: Development environments (<5 services)
-- **Medium**: Staging environments (5-13 services)  
-- **Large**: Production environments (13-23 services)
+---
 
 ## Prerequisites
 
 Before starting, ensure you have:
-- AWS CLI configured with appropriate permissions
-- Terraform installed (version 1.0+)
-- An S3 bucket for Terraform state storage
+- AWS CLI configured (`aws sts get-caller-identity`)
+- Terraform 1.0+ installed (`terraform --version`)
+- Git installed (`git --version`)
+- S3 bucket for Terraform state (setup below)
 
-## Step 1: Clone the Repository (IMPLEMENTATION PHASE ONLY)
+---
 
-**IMPORTANT: This step only happens during task execution, after completing the spec workflow**
+## Step 1: Setup Size Selection
 
-**Prerequisites:**
-- Requirements.md has been created and approved
-- Design.md has been created and approved  
-- Tasks.md has been created and approved
-- You are now executing implementation tasks
+Choose your infrastructure size based on requirements:
 
-I'll merge the poc-idp repository into your current working directory using the merge approach:
+### Quick Decision Matrix
 
-**Immediate Actions Required:**
+| Requirement | Small | Medium | Large |
+|-------------|:-----:|:------:|:-----:|
+| High Availability | ❌ | ⚠️ Partial | ✅ Full |
+| Caching Layer | ❌ | ✅ Basic | ✅ Advanced |
+| Document Database | ❌ | ✅ Basic | ✅ Clustered |
+| Backup Strategy | ❌ | ✅ Comprehensive | ✅ Enterprise |
+| VPN Access | ❌ | ❌ | ✅ |
+| Production Ready | ❌ | ⚠️ Staging | ✅ |
+
+### Setup Descriptions
+
+**Small Setup** (`tfvars-sample/example-small-setup.tfvars`)
+- **Cost:** $50-100/month, **Services:** <5
+- **Network:** VPC, single NAT, bastion host
+- **Database:** RDS Aurora (1 instance, no MultiAZ)
+- **Application:** ECS, up to 5 services, Fargate
+- **Best For:** Development, testing, MVPs
+
+**Medium Setup** (`tfvars-sample/example-medium-setup.tfvars`)
+- **Cost:** $200-400/month, **Services:** 5-13
+- **Network:** VPC + private endpoints
+- **Database:** RDS Aurora (2 instances), ElastiCache, DocumentDB
+- **Application:** ECS, up to 13 services, Fargate
+- **Monitoring:** CloudWatch + SNS notifications
+- **Backups:** AWS Backup enabled
+- **Best For:** Staging, small production
+
+**Large Setup** (`tfvars-sample/example-large-setup.tfvars`)
+- **Cost:** $800-1500/month, **Services:** 13-23
+- **Network:** Full HA NAT, Client VPN, VPC flow logs
+- **Database:** RDS Serverless V2 (MultiAZ), ElastiCache (MultiAZ), DocumentDB cluster
+- **Application:** ECS, up to 23 services, Fargate with autoscaling
+- **Monitoring:** Comprehensive CloudWatch + SNS
+- **Backups:** Full AWS Backup coverage
+- **Best For:** Production, mission-critical workloads
+
+---
+
+## Step 2: S3 Backend Setup
+
+Set up Terraform state storage before deployment.
+
+### Automated S3 Backend Setup
+
+**Kiro should use developer's AWS credentials directly through MCP servers** (see `#aws-resource-verification-guide` for complete instructions).
+
+**S3 Backend Setup Process:**
+1. ✅ Verify AWS credentials and permissions
+2. ✅ Check if S3 bucket exists and is properly configured
+3. ✅ Create bucket with security best practices if needed
+4. ✅ Configure versioning, encryption, and public access blocking
+5. ✅ Create DynamoDB table for state locking
+6. ✅ Generate Terraform backend configuration file
+
+**Key Commands for Kiro to Execute:**
+
+### Option A: Use Existing Bucket
+
+**Kiro should validate existing bucket:**
 ```bash
-# Step 1: Clone to temporary directory
+# Check if bucket exists and is accessible
+aws s3 ls s3://your-terraform-state-bucket --profile [profile]
+
+# Check versioning status
+aws s3api get-bucket-versioning --bucket your-terraform-state-bucket --profile [profile]
+
+# Check encryption status
+aws s3api get-bucket-encryption --bucket your-terraform-state-bucket --profile [profile]
+
+# Check public access block
+aws s3api get-public-access-block --bucket your-terraform-state-bucket --profile [profile]
+```
+
+**If configuration issues found, Kiro should fix them:**
+```bash
+# Enable versioning if disabled
+aws s3api put-bucket-versioning \
+  --bucket your-terraform-state-bucket \
+  --versioning-configuration Status=Enabled \
+  --profile [profile]
+
+# Enable encryption if missing
+aws s3api put-bucket-encryption \
+  --bucket your-terraform-state-bucket \
+  --server-side-encryption-configuration '{
+    "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+  }' \
+  --profile [profile]
+
+# Block public access if not configured
+aws s3api put-public-access-block \
+  --bucket your-terraform-state-bucket \
+  --public-access-block-configuration '{
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+  }' \
+  --profile [profile]
+```
+
+### Option B: Create New Backend
+
+**Kiro should create complete new backend:**
+```bash
+# Create bucket (handle us-east-1 special case)
+if [ "[region]" = "us-east-1" ]; then
+  aws s3 mb s3://your-terraform-state-bucket --profile [profile]
+else
+  aws s3 mb s3://your-terraform-state-bucket --region [region] --profile [profile]
+fi
+
+# Enable versioning
+aws s3api put-bucket-versioning \
+  --bucket your-terraform-state-bucket \
+  --versioning-configuration Status=Enabled \
+  --profile [profile]
+
+# Enable encryption
+aws s3api put-bucket-encryption \
+  --bucket your-terraform-state-bucket \
+  --server-side-encryption-configuration '{
+    "Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]
+  }' \
+  --profile [profile]
+
+# Block public access
+aws s3api put-public-access-block \
+  --bucket your-terraform-state-bucket \
+  --public-access-block-configuration '{
+    "BlockPublicAcls": true,
+    "IgnorePublicAcls": true,
+    "BlockPublicPolicy": true,
+    "RestrictPublicBuckets": true
+  }' \
+  --profile [profile]
+
+# Create DynamoDB table for state locking
+aws dynamodb create-table \
+  --table-name terraform-state-lock \
+  --attribute-definitions AttributeName=LockID,AttributeType=S \
+  --key-schema AttributeName=LockID,KeyType=HASH \
+  --billing-mode PAY_PER_REQUEST \
+  --region [region] \
+  --profile [profile]
+```
+
+### Create Backend Configuration
+
+**Kiro should generate backend configuration file:**
+
+Create `tfbackends/[application]-[account_id]-[region].tfbackend`:
+```hcl
+bucket         = "your-terraform-state-bucket"
+key            = "terraform/[application]/[environment]/terraform.tfstate"
+region         = "[region]"
+encrypt        = true
+dynamodb_table = "terraform-state-lock"
+```
+
+**Expected Output:**
+```
+🚀 Setting up Terraform S3 backend...
+✅ Connected to AWS account: 253650698585
+📦 Creating S3 bucket: my-terraform-state
+✅ Bucket created successfully
+🔄 Enabling versioning...
+✅ Versioning enabled
+🔐 Enabling encryption...
+✅ Encryption enabled
+🚫 Blocking public access...
+✅ Public access blocked
+🗄️ Creating DynamoDB table: terraform-state-lock
+✅ Table created successfully
+📝 Backend configuration written to: tfbackends/myapp-253650698585-us-east-1.tfbackend
+
+🎉 S3 backend setup completed successfully!
+```
+
+---
+
+## Step 3: Implementation
+
+**Only after spec workflow is complete (requirements.md, design.md, tasks.md approved).**
+
+### Clone Repository
+
+**Via Git MCP:** Clone the poc-idp repository:
+
+```bash
+# Clone to temporary directory
 git clone https://github.com/santyar0/poc-idp.git temp-poc-idp
 
-# Step 2: Move git history to current directory
+# Merge into current directory
 mv temp-poc-idp/.git ./
-
-# Step 3: Move all files to current directory
 mv temp-poc-idp/* ./
-
-# Step 4: Clean up temporary directory
 rm -rf temp-poc-idp
 ```
 
-**What this does:**
-- Clones the complete repository to a temporary directory
-- Merges all repository content into your current working directory
-- Provides access to all battle-tested templates in current workspace
-- Maintains git history for version control
-- Cleans up temporary files to keep workspace organized
+**Repository URL:** `https://github.com/santyar0/poc-idp.git`
 
-**After merging, you'll have access to:**
-- `example-small-setup.tfvars` - Development/MVP template
-- `example-medium-setup.tfvars` - Staging/small production template  
-- `example-large-setup.tfvars` - Large production template
-- Complete Terraform modules and configurations
-- `README.md` - Detailed deployment instructions
+**Automated:** The agent can perform git operations using Git MCP server.
 
-**Alternative Approach (if you prefer isolated directory):**
+### Step 4: AWS Account Setup Choice
+
+**Kiro should ask the user to choose their AWS account situation:**
+
+```
+🔧 AWS Account Setup
+
+I need to understand your AWS account situation to proceed correctly:
+
+1. 🆕 **Brand New Account** - I have a fresh AWS account with no existing resources
+2. 🏗️ **Existing Account** - I have an AWS account with existing resources that need validation
+
+Which option describes your situation?
+```
+
+#### Option 1: Brand New Account (No Validation Needed)
+
+**For fresh AWS accounts, Kiro should:**
+
+1. **Verify Basic Access:**
+   ```bash
+   # Simple credential verification
+   aws sts get-caller-identity --profile [selected-profile]
+   ```
+
+2. **Proceed with Default Configuration:**
+   - Use default VPC CIDR: `10.0.0.0/16`
+   - Use user-specified application and environment names
+   - No conflict checking needed
+   - Skip resource scanning
+
+3. **Inform User:**
+   ```
+   ✅ Fresh AWS Account Detected
+   
+   Since this is a brand new account, I'll use the default configuration:
+   • VPC CIDR: 10.0.0.0/16
+   • Application: [user-specified]
+   • Environment: [user-specified]
+   
+   No resource conflicts expected. Proceeding with deployment setup...
+   ```
+
+#### Option 2: Existing Account (Full Validation Required)
+
+**For accounts with existing resources, Kiro should perform comprehensive analysis** (see `#aws-resource-verification-guide` for complete instructions):
+
+1. **Verify AWS Credentials:**
+   ```bash
+   aws sts get-caller-identity --profile [selected-profile]
+   ```
+
+2. **Comprehensive Resource Scanning:**
+   ```bash
+   # Network analysis
+   aws ec2 describe-vpcs --profile [profile] --region [region] --query 'Vpcs[*].{VpcId:VpcId,CidrBlock:CidrBlock,State:State}'
+   
+   # Database analysis
+   aws rds describe-db-clusters --profile [profile] --region [region] --query 'DBClusters[*].{ClusterIdentifier:DBClusterIdentifier,Engine:Engine,Status:Status}'
+   
+   # Application analysis
+   aws ecs list-clusters --profile [profile] --region [region]
+   aws elbv2 describe-load-balancers --profile [profile] --region [region] --query 'LoadBalancers[?Type==`application`]'
+   
+   # Storage analysis
+   aws s3api list-buckets --profile [profile] --query 'Buckets[*].{Name:Name,CreationDate:CreationDate}'
+   ```
+
+3. **Conflict Detection and Resolution:**
+   
+   **CIDR Block Analysis:**
+   ```bash
+   # Check for VPC CIDR conflicts
+   EXISTING_CIDRS=$(aws ec2 describe-vpcs --profile [profile] --region [region] --query 'Vpcs[*].CidrBlock' --output text)
+   
+   # If 10.0.0.0/16 exists, recommend 10.1.0.0/16 or 10.2.0.0/16
+   ```
+   
+   **Naming Conflict Analysis:**
+   ```bash
+   # Check ECS clusters for naming conflicts
+   aws ecs list-clusters --profile [profile] --region [region] --query "clusterArns[?contains(@, '${APPLICATION_NAME}')]"
+   
+   # Check RDS clusters for naming conflicts
+   aws rds describe-db-clusters --profile [profile] --region [region] --query "DBClusters[?contains(DBClusterIdentifier, '${APPLICATION_NAME}')]"
+   ```
+
+4. **Present Analysis Results:**
+   ```
+   🔍 AWS ACCOUNT ANALYSIS SUMMARY
+   ============================================================
+   📋 Account ID: 253650698585
+   👤 Profile: default
+   🌍 Region: us-east-1
+   
+   📊 Resource Summary:
+      • VPCs: 2 (CIDR: 10.0.0.0/16, 172.31.0.0/16)
+      • RDS Clusters: 1 (mysql-prod-cluster)
+      • ECS Clusters: 0
+      • S3 Buckets: 15
+   
+   ⚠️  Conflicts Detected: 1
+      CIDR Conflicts:
+        • Existing VPC uses 10.0.0.0/16 (conflicts with default)
+   
+   💡 Recommendations:
+      • Use CIDR block 10.1.0.0/16 for new VPC
+      • Proceed with deployment using adjusted configuration
+   
+   Would you like me to apply these adjustments? (y/n)
+   ```
+
+5. **Apply Configuration Adjustments:**
+   ```hcl
+   # Adjusted tfvars based on analysis
+   vpc_cidr_block = "10.1.0.0/16"  # Adjusted to avoid existing 10.0.0.0/16
+   application = "web-v2"           # Adjusted if naming conflicts found
+   environment = "dev-new"          # Adjusted if conflicts detected
+   ```
+
+#### AWS Profile Selection
+
+**For both options, Kiro should first ask:**
+
+```
+🔑 AWS Profile Selection
+
+Which AWS CLI profile should I use?
+
+Available profiles:
+• default
+• production  
+• staging
+• development
+
+Or specify a custom profile name: ___________
+```
+
+**Profile Verification:**
 ```bash
-# Create dedicated directory
-mkdir ecs-terraform
+# Test selected profile
+aws sts get-caller-identity --profile [selected-profile]
 
-# Clone to dedicated directory
-git clone https://github.com/santyar0/poc-idp.git ecs-terraform
-
-# Work within dedicated directory
-cd ecs-terraform
+# If successful, show account info
+# If failed, ask user to configure: aws configure --profile [profile-name]
 ```
 
-**IMPORTANT:** This repository cloning only happens during task execution, not during spec creation phases.
+### Step 5: Interactive Configuration Collection
 
-## Step 2: Collect Configuration Information
+Collect configuration through interactive dialog. User can provide values or use defaults:
 
-**Before creating any configuration files, collect all mandatory information through structured dialog:**
+#### Required Configuration Fields
 
-### Application Name Collection
-**Ask using userInput tool:**
-```json
-{
-  "question": "**What is your application name?** (This will be used for resource naming and must be suitable for AWS resource names)",
-  "reason": "spec-entry-point-choice"
-}
+**AWS Account Settings:**
+```
+account_id = "253650698585"  # CHANGE_ME_PLEASE - AWS account ID where all resources should be configured
+region = "us-east-1"         # CHANGE_ME_PLEASE - Region in AWS cloud where all resources should be configured
 ```
 
-### Environment Selection
-**Ask using userInput tool:**
-```json
-{
-  "question": "**What environment is this for?**",
-  "reason": "spec-entry-point-choice",
-  "options": [
-    {
-      "title": "dev",
-      "description": "Development environment for testing and development work"
-    },
-    {
-      "title": "staging", 
-      "description": "Staging environment for pre-production testing"
-    },
-    {
-      "title": "prod",
-      "description": "Production environment for live applications"
-    }
-  ]
-}
+**Application Settings:**
+```
+application = "web"          # CHANGE_ME_PLEASE - Name of the application
+environment = "dev"          # CHANGE_ME_PLEASE - Environment name (dev/staging/prod)
 ```
 
-### AWS Account ID Collection
-**Ask using userInput tool:**
-```json
-{
-  "question": "**What is your AWS Account ID?** (12-digit number, you can get this with 'aws sts get-caller-identity')",
-  "reason": "spec-entry-point-choice"
-}
+**Optional Settings:**
+```
+# additional_tags = {         # Optional - The list of additional tags
+#   product = "product_name"
+#   project = "company_name"
+# }
 ```
 
-### AWS Region Selection
-**Ask using userInput tool:**
-```json
-{
-  "question": "**Which AWS region do you want to deploy to?**",
-  "reason": "spec-entry-point-choice",
-  "options": [
-    {
-      "title": "us-east-1",
-      "description": "US East (N. Virginia) - Most services available, lowest latency for US East Coast"
-    },
-    {
-      "title": "us-west-2", 
-      "description": "US West (Oregon) - Good for US West Coast, comprehensive service availability"
-    },
-    {
-      "title": "eu-west-1",
-      "description": "Europe (Ireland) - Primary EU region with full service availability"
-    },
-    {
-      "title": "ap-southeast-1",
-      "description": "Asia Pacific (Singapore) - Good for Southeast Asia"
-    },
-    {
-      "title": "ap-northeast-1",
-      "description": "Asia Pacific (Tokyo) - Good for Japan and Northeast Asia"
-    },
-    {
-      "title": "Other region",
-      "description": "Specify a different AWS region"
-    }
-  ]
-}
+#### Interactive Collection Process
+
+For each field, prompt user with:
+- **Field description** and current default value
+- **Option to skip** (use default) or provide custom value
+- **Validation** for required formats (account_id: 12 digits, region: valid AWS region)
+
+### Step 6: Create Project Configuration
+
+1. **Copy template** from `tfvars-sample/example-{size}-setup.tfvars` to `tfvars/[application]-[account_id]-[region].tfvars`
+2. **Apply collected values** to the copied configuration file
+3. **Validate configuration** before proceeding
+
+#### File Structure
+
+```
+tfvars-sample/                    # Template files (read-only)
+├── example-small-setup.tfvars
+├── example-medium-setup.tfvars
+└── example-large-setup.tfvars
+
+tfvars/                          # Generated configuration files
+└── [application]-[account_id]-[region].tfvars
+
+tfbackends/                      # Backend configuration files
+└── [application]-[account_id]-[region].tfbackend
 ```
 
-### Configuration Summary
-After collecting all information, display summary and confirm:
-```
-Configuration Summary:
-- Application: [application-name]
-- Environment: [environment]  
-- AWS Account ID: [account-id]
-- AWS Region: [region]
+#### Configuration Process
 
-Generated file names:
-- tfbackend: [application-name]-[account-id]-[region].tfbackend
-- tfvars: [application-name]-[account-id]-[region].tfvars
-```
+1. **Select setup size** (small/medium/large)
+2. **Collect interactive configuration** (account_id, region, application, environment, optional tags)
+3. **Copy template** from `tfvars-sample/` to `tfvars/`
+4. **Apply collected values** to the copied file
+5. **Create backend configuration** in `tfbackends/`
+| Large | `tfvars/example-large-setup.tfvars` |
 
-## Step 3: Create Terraform Backend Configuration
-
-**Using the collected configuration information:**
-
-**Ask Kiro to:**
-> "Create tfbackend file using collected configuration"
-
-This will use the Filesystem MCP server to:
-- Create `tfbackend/[application-name]-[account-id]-[region].tfbackend` file
-- Use existing `*.tfbackend` files as reference
-- Configure S3 backend without embedding credentials
-- Reference: https://developer.hashicorp.com/terraform/language/backend/s3
-
-**Backend file format:**
+**Mandatory variables to update:**
 ```hcl
-bucket = "your-terraform-state-bucket"
-key    = "path/to/your/terraform.tfstate"
-region = "[region]"
+environment = "[environment]"
+account_id  = "[account_id]"
+region      = "[region]"
+application = "[application]"
 ```
 
-**IMPORTANT:** 
-- Do not specify any credentials in the tfbackend file
-- Ensure S3 bucket exists with proper permissions
-- User executing Terraform must have appropriate AWS permissions
+**Configuration values are automatically applied from the interactive collection process.**
 
-## Step 4: Create Project Configuration (tfvars)
+### Step 7: Verify AWS Access
 
-**Using the collected configuration information:**
+**Via Terraform MCP:** Verify AWS credentials and access:
 
-**Ask Kiro to:**
-> "Create tfvars file using collected configuration and [size] setup template"
-
-This will use the Filesystem MCP server to:
-- Create `tfvars/[application-name]-[account-id]-[region].tfvars` file
-- Copy from appropriate template based on your setup size:
-  - `tfvars/example-small-setup.tfvars` - For Small setup
-  - `tfvars/example-medium-setup.tfvars` - For Medium setup  
-  - `tfvars/example-large-setup.tfvars` - For Large setup
-- Automatically populate mandatory variables with collected information
-
-**Mandatory variables automatically populated:**
-- `environment = "[environment]"` - From dialog selection
-- `account_id = "[account-id]"` - From dialog input
-- `region = "[region]"` - From dialog selection
-- `application = "[application-name]"` - From dialog input
-
-**Additional configuration options:**
-- Check `README.md` file for complete list of configuration options
-- Customize based on your specific requirements
-- Review all remaining `CHANGE_ME_PLEASE` values in the template
-
-## Step 5: Configure AWS Access and Verify Account
-
-**Ask Kiro to:**
-> "Verify AWS configuration matches collected information"
-
-This will:
-- Check AWS environment variables are configured
-- Run `aws sts get-caller-identity` to confirm AWS account matches collected account ID
-- Verify user has necessary permissions for infrastructure creation
-- Validate S3 bucket access for Terraform state storage
-- Confirm region configuration matches collected region
-
-**AWS Configuration Requirements:**
-- Configure AWS access via environment variables or AWS CLI
-- Ensure user has permissions for ECS, VPC, RDS, S3, IAM, and other AWS services
-- Verify you're working with the correct AWS account (must match collected account ID)
-- Confirm AWS CLI region matches collected region
-
-## Step 6: Initialize Terraform
-
-**Ask Kiro to:**
-> "Initialize Terraform with collected configuration"
-
-This will run:
 ```bash
-terraform init -backend-config=tfbackends/[application-name]-[account-id]-[region].tfbackend -reconfigure
+aws sts get-caller-identity
 ```
 
-**What this does:**
-- Initializes Terraform with your specific backend configuration
-- Downloads required providers and modules
-- Configures remote state storage in S3
-- Uses `-reconfigure` flag to ensure clean initialization
+**Validation checks:**
+- Account ID matches collected value
+- User has required permissions (ECS, VPC, RDS, S3, IAM)
+- Region matches collected value
 
-## Step 7: Review Terraform Plan
+**Automated:** The agent can verify AWS access through MCP servers.
 
-**Ask Kiro to:**
-> "Show me the Terraform plan using collected configuration"
+### Step 8: Initialize Terraform
 
-This will run:
+**Via Terraform MCP:** Initialize Terraform with backend configuration:
+
 ```bash
-terraform plan -var-file=tfvars/[application-name]-[account-id]-[region].tfvars
+terraform init \
+  -backend-config=tfbackends/[application]-[account_id]-[region].tfbackend \
+  -reconfigure
 ```
 
-**What this does:**
-- Shows all resources that will be created using your configuration
-- Displays estimated costs and resource counts
-- Highlights any configuration issues
-- Uses the automatically populated mandatory variables
-- Allows you to review before deployment
+### Step 9: Review Plan
 
-**If modifications needed:**
-- Update your tfvars file based on plan review
-- Repeat the plan step to verify changes
-- Continue iterating until plan looks correct
+**Via Terraform MCP:** Generate and review Terraform plan:
 
-## Step 8: Deploy Infrastructure
-
-**Ask Kiro to:**
-> "Deploy my ECS infrastructure using collected configuration"
-
-This will run:
 ```bash
-terraform apply -var-file=tfvars/[application-name]-[account-id]-[region].tfvars
+terraform plan -var-file=tfvars/[application]-[account_id]-[region].tfvars
 ```
 
-**What this does:**
-- Executes the Terraform plan with confirmation
-- Creates all AWS resources as defined in your configuration
-- Uses the automatically populated configuration values
-- Monitors deployment progress with real-time status updates
-- Displays final outputs including endpoints and resource details
+**Review output for:**
+- Resources to be created
+- Configuration issues
+- Cost implications
 
-## Step 9: Verify Deployment
+**If modifications needed:** Update tfvars and repeat plan.
 
-After deployment, Kiro will automatically:
-- Validate ECS cluster is running and healthy
-- Check Application Load Balancer health and status
-- Verify database connectivity (if RDS/DocumentDB is configured)
-- Display all important endpoints, URLs, and connection details
-- Provide next steps for application deployment
-- Show resource names using your application name and environment
+**Automated:** The agent can generate and analyze Terraform plans through Terraform MCP server.
 
-## MCP-Enhanced Features
+### Step 10: Deploy
 
-With MCP servers, this power provides:
+**Via Terraform MCP:** Apply the Terraform configuration:
 
-### Git Operations
-- Intelligent repository cloning
-- Branch management
-- Template discovery
-- Version tracking
+```bash
+terraform apply -var-file=tfvars/[application]-[account_id]-[region].tfvars
+```
 
-### AWS Integration  
-- Real-time resource validation
-- S3 bucket verification
-- IAM permission checking
-- Cost estimation
+**Automated:** The agent can execute Terraform apply through Terraform MCP server.
 
-### File Management
-- Smart template customization
-- Configuration validation
-- Backup creation
-- Diff visualization
+### Step 11: Verify Deployment
+
+**Via Terraform MCP:** Post-deployment verification:
+- [ ] ECS cluster running and healthy
+- [ ] ALB health checks passing
+- [ ] Database connectivity (if configured)
+- [ ] Endpoints accessible
+
+**Automated:** The agent can verify deployment status through Terraform MCP server.
+
+---
+
+## MCP Automation Summary
+
+The following operations can be **automated through MCP servers using developer's AWS credentials**:
+
+| Operation | MCP Server | Automation Level |
+|-----------|------------|------------------|
+| **AWS credential verification** | Terraform MCP | ✅ Direct credential validation |
+| **AWS resource scanning** | Terraform MCP | ✅ Comprehensive automated analysis |
+| **Conflict detection** | Terraform MCP | ✅ Intelligent conflict resolution |
+| **Configuration adjustment** | Filesystem MCP | ✅ Automated config generation |
+| **S3 backend setup** | Terraform MCP | ✅ Complete backend automation |
+| **DynamoDB table creation** | Terraform MCP | ✅ Automated with validation |
+| **Repository cloning** | Git MCP | ✅ Fully automated |
+| **File creation/copying** | Filesystem MCP | ✅ Fully automated |
+| **Configuration generation** | Filesystem MCP | ✅ Template-based automation |
+| **Terraform init/plan/apply** | Terraform MCP | ✅ Fully automated |
+
+## Direct AWS Integration Benefits
+
+**Key Advantages of Direct AWS CLI Integration:**
+- ✅ **No Additional Scripts**: Uses existing AWS CLI and MCP servers
+- ✅ **Developer Credentials**: Leverages user's existing AWS access
+- ✅ **Real-time Analysis**: Direct AWS API calls for current state
+- ✅ **MCP Integration**: Seamless integration with existing workflow
+- ✅ **Cross-Platform**: Works on Windows, macOS, and Linux
+- ✅ **Immediate Results**: No script installation or setup required
+
+**Kiro's Analysis Capabilities:**
+- **Network Analysis**: VPC CIDR conflict detection and resolution
+- **Resource Scanning**: Comprehensive AWS resource inventory
+- **Conflict Prevention**: Intelligent naming and configuration adjustments
+- **Security Validation**: S3 bucket security configuration verification
+- **Limit Checking**: AWS service limit validation and warnings
+
+**Integration Points:**
+- `#aws-resource-verification-guide` - Complete analysis instructions for Kiro
+- Terraform MCP Server - AWS CLI command execution
+- Filesystem MCP Server - Configuration file generation
+- Git MCP Server - Version control integration
+
+## Resource Conflict Prevention
+
+**Automated Scanning:** The workflow now includes comprehensive AWS account scanning to:
+- **Detect existing resources** (VPCs, RDS, ECS, etc.)
+- **Identify naming conflicts** and suggest alternatives
+- **Avoid CIDR block overlaps** in network configuration
+- **Prevent resource duplication** while maintaining isolation
+- **Check account limits** and warn of potential issues
+
+**Smart Configuration:** Based on scan results, automatically adjusts:
+- VPC CIDR blocks to avoid conflicts
+- Resource naming to prevent duplicates
+- Availability zone selection if needed
+- Application naming if conflicts detected
+
+## Command Reference
+
+**Automated execution with Kiro (recommended):**
+
+```bash
+# Kiro performs comprehensive AWS analysis using developer credentials
+# See #aws-resource-verification-guide for complete instructions
+
+# Analysis and backend setup through MCP servers
+aws sts get-caller-identity --profile [profile]
+aws ec2 describe-vpcs --profile [profile] --region [region]
+aws s3 mb s3://[bucket-name] --region [region] --profile [profile]
+
+# Complete deployment sequence with Terraform
+terraform init -backend-config=tfbackends/[app]-[account]-[region].tfbackend -reconfigure
+terraform plan -var-file=tfvars/[app]-[account]-[region].tfvars
+terraform apply -var-file=tfvars/[app]-[account]-[region].tfvars
+```
+
+**Manual execution (if needed):**
+
+```bash
+# Complete deployment sequence
+aws sts get-caller-identity
+terraform init -backend-config=tfbackends/[app]-[account]-[region].tfbackend -reconfigure
+terraform plan -var-file=tfvars/[app]-[account]-[region].tfvars
+terraform apply -var-file=tfvars/[app]-[account]-[region].tfvars
+
+# Useful operations
+terraform plan -target=aws_ecs_service.app    # Target specific resource
+terraform apply -parallelism=20               # Faster deployment
+terraform output                              # Show outputs
+terraform state list                          # List managed resources
+```
+
+---
 
 ## Next Steps
 
-1. **Configure your applications** to use the deployed infrastructure
-2. **Set up monitoring** using the CloudWatch alarms created
-3. **Configure DNS** if using custom domains
-4. **Set up CI/CD pipelines** to deploy your applications
-5. **Customize infrastructure** with additional components using `#infrastructure-customization-workflow`
-6. **Follow best practices** for ongoing maintenance using `#aws-terraform-best-practices`
-7. **Extend infrastructure** with new components using `#component-extension-guide`
+After deployment:
+1. Configure applications for deployed infrastructure
+2. Set up monitoring with created CloudWatch alarms
+3. Configure DNS for custom domains
+4. Set up CI/CD pipelines
 
-## AI-DLC Operations Phase
+---
 
-For production deployments, consider completing the AI-DLC Operations phase:
+## Related Guides
 
-**Activate Operations Phase:** "Using AI-DLC, I want to complete the Operations phase for my deployed infrastructure"
-
-This includes:
-- **Monitoring and Observability**: CloudWatch dashboards and alerting
-- **Documentation and Knowledge Transfer**: Operational runbooks and procedures
-- **Performance Optimization**: Baseline establishment and tuning
-
-**For detailed Operations guidance:** See `#ai-dlc-infrastructure-workflow`
-
-## Need Help?
-
-- **Deployment issues?** See: `#troubleshooting-guide`
-- **Terraform execution problems?** See: `#terraform-execution-steps`
-- **Template questions?** See: `#template-selection-guide`
-- **Adding new components?** See: `#infrastructure-customization-workflow`
-- **Extension patterns?** See: `#component-extension-guide`
-- **Best practices guidance?** See: `#aws-terraform-best-practices`
-
-## Example Conversation Flow
-
-Here's how a typical deployment conversation might look:
-
-**You:** "I want to deploy ECS infrastructure for my staging environment"
-
-**Kiro:** *Uses this workflow to guide you through:*
-1. Cloning poc-idp repository
-2. Recommending medium setup for staging
-3. Customizing template with your values
-4. Setting up S3 backend
-5. Running Terraform commands
-6. Validating deployment
-
-**Result:** Production-ready ECS infrastructure deployed with expert guidance and automated validation.
-
-## Important Notes
-
-- This deployment follows the exact workflow from the poc-idp repository README
-- All infrastructure patterns are battle-tested and production-ready
-- MCP servers provide intelligent automation while maintaining flexibility
-- State is stored in S3 with encryption and locking for team collaboration
+- `#component-extension-guide` - Adding new components
+- `#poc-idp-style-guide` - Repository coding patterns and best practices
+- `#troubleshooting-guide` - Common issues and solutions
+- `#ai-dlc-infrastructure-workflow` - Structured planning methodology
